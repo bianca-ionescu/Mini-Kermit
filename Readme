@@ -1,0 +1,72 @@
+Nume: Ionescu Bianca-Iulia
+Grupa: 324CB
+Tema: 1 PC
+
+Fisiere:
+* lib.h -> nici o modificare faţă de scheletul de cod
+* kermit.h
+* ksender.c
+* kreceiver.c
+
+Detaliere implementare:
+
+* kermit.h
+- Definire structuri Mini_Kermit şi Data_Init (pentru pachetul S)
+- Implementare a 4 funcţii definite anterior:
+	* print_package - afişare Mini_kermit şi date primite (pachet diferit de S)
+					- altfel apelăm print_data (pachet S)
+    * kermit_to_msg - Prelucrarea informaţiilor trimise şi conversia lor la 
+    tipul mesaj, urmărind etapele necesare (Alocare structură mesaj, copiere 
+    date efective, calculare CRC, actualizare len pachet)
+    * aloc - alocare dinamică efectivă a pachetului (inclusiv câmp data)
+
+* ksender.c
+- Declararea globală a secvenţei
+- Implementarea a 3 funcţii: 
+	* prelucrare_mesaj_trimis - conversie kermit în mesaj efectiv
+							  - trimitere mesaj
+							  - eliberare structuri folosite anterior (kermit, 
+							  mesaj)
+	* send_msg - c reprezintă numărul de pachete ce pot primi timeout (3)
+			   - se trimite mesajul
+			   - se aşteaptă 5 secunde pentru a vedea dacă pachetul s-a trimis 
+			   sau nu
+			   - dacă avem mesaj de tip "ACK"(Y) - incrementăm nr secvenţei din 
+			   sender cu 2
+			   - dacă avem mesaj de tip "NAK"(N) - actualizăm c la 3, trimitem 
+			   nr secvenţei la care am primit timeout, recalculăm CRC şi 
+			   retrimitem mesajul
+			   - altfel scădem nr de pachete ce mai pot primi timeout (c) şi 
+			   retrimitem mesajul (în caz de pierdere a mesajului)
+			   - eliberăm structura de tip msg*
+	* main - alocăm pachetul iniţial
+		   - convertim structura la mesaj
+		   - deschidem pe rând fiecare fişier de trimis
+		   - trimitem numele fişierului
+		   - trimitem datele - împărţim în secvenţe de maxim 250 caractere pe 
+		   care le trimitem cât timp mai avem informaţii
+		   - trimitem end of file
+		   - trimitem end of transmision
+
+* kreceiver.c
+- Implementarea a 2 funcţii: 
+	* prelucrare_mesaj_primit - conversie kermit în mesaj efectiv
+							  - trimitere mesaj
+							  - eliberare structuri folosite anterior (kermit, 
+							  mesaj)
+	* receive_msg - c reprezintă numărul de pachete ce pot primi timeout (3)
+			   - se trimite mesajul cât timp nu avem timeout
+			   - se verifică CRC primit cu CRC calculat
+			   - dacă avem CRC egale (Y) - incrementăm secvenţa, alocăm pachet de 
+			   tip Y ("ACK") şi îl trimitem înapoi (şi ieşim evident din buclă)
+			   - dacă avem CRC diferite (N) - incrementăm secvenţa, îl facem pe c 
+			   înapoi 3 (nu se ia în calcul la timeout), alocăm pachet de tip N 
+			   ("NAK") şi îl trimitem înapoi
+			   - altfel scădem nr de pachete ce mai pot primi timeout (c)
+	* main - cât timp mai primim mesaje analizăm mesajele primite
+		   - dacă este de tip 'F' creem un fişier nou cu numele "recv_" + nume 
+		   primit
+		   - dacă este de tip 'D' scriem în fişierul creat anterior
+		   - dacă este de tip 'Z' închidem fişierul curent
+		   - cât timp nu primim pachet de tip 'B' - end of transaction
+
